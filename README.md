@@ -4,7 +4,7 @@ This repository is the accepted Product Knowledge Base for the Notes API. It des
 
 ## Product
 
-The Notes API is a small HTTP API for managing notes in memory. A note has four fields:
+The Notes API is a small HTTP API for managing notes in memory. A note has five fields:
 
 | Field | Type | Description |
 |---|---|---|
@@ -12,10 +12,13 @@ The Notes API is a small HTTP API for managing notes in memory. A note has four 
 | `title` | string | Short title for the note |
 | `content` | string | Body of the note |
 | `tags` | array of strings | Optional labels used to group notes |
+| `pinned` | boolean | Whether the note is pinned; defaults to `false` |
 
 New notes receive a unique integer `id`. The baseline implementation does not persist data across process restarts.
 
 Each tag is a non-empty string, and tags are matched exactly, including case and whitespace. A note's `tags` field is always present in responses as an array; it is empty when the note has no tags. Duplicate tag values on a note are stored once.
+
+A note's `pinned` field is always present in responses. It is `false` unless the note has been pinned.
 
 ## Operations
 
@@ -23,9 +26,9 @@ Each tag is a non-empty string, and tags are matched exactly, including case and
 
 `GET /notes`
 
-Returns every note as a JSON array. Notes are returned in ascending `id` order.
+Returns every note as a JSON array. Pinned notes are returned first, followed by the remaining notes. Within each group, notes are returned in ascending `id` order.
 
-`GET /notes?tag=<value>` returns only notes whose `tags` contain exactly `<value>`, still in ascending `id` order. A `tag` value that matches no note, including an empty value, returns HTTP `200 OK` with an empty array. When `tag` is omitted, all notes are returned.
+`GET /notes?tag=<value>` returns only notes whose `tags` contain exactly `<value>`, in the same order: pinned notes first, followed by the remaining notes, with ascending `id` order within each group. A `tag` value that matches no note, including an empty value, returns HTTP `200 OK` with an empty array. When `tag` is omitted, all notes are returned.
 
 ### Create a note
 
@@ -37,11 +40,12 @@ Request body:
 {
   "title": "Shopping list",
   "content": "Milk and coffee",
-  "tags": ["personal", "shopping"]
+  "tags": ["personal", "shopping"],
+  "pinned": true
 }
 ```
 
-The `title` and `content` fields are required non-empty strings. The `tags` field is optional; if it is omitted, the note is created with no tags. The response is the created note, including its assigned `id`, and uses HTTP `201 Created`.
+The `title` and `content` fields are required non-empty strings. The `tags` field is optional; if it is omitted, the note is created with no tags. The `pinned` field is optional; if it is omitted, the note is created with `pinned` set to `false`. The response is the created note, including its assigned `id`, and uses HTTP `201 Created`.
 
 ### Retrieve a note
 
@@ -59,11 +63,12 @@ Request body:
 {
   "title": "Updated shopping list",
   "content": "Milk, coffee, and tea",
-  "tags": ["personal"]
+  "tags": ["personal"],
+  "pinned": false
 }
 ```
 
-The request replaces the note's `title`, `content`, and `tags`. The `title` and `content` fields are required non-empty strings. The `tags` field is optional; if it is omitted or empty, all tags are cleared. The response is the updated note. If no such note exists, the API returns HTTP `404 Not Found`.
+The request replaces the note's `title`, `content`, `tags`, and `pinned`. The `title` and `content` fields are required non-empty strings. The `tags` field is optional; if it is omitted or empty, all tags are cleared. The `pinned` field is optional; if it is omitted, `pinned` is reset to `false`. The response is the updated note. If no such note exists, the API returns HTTP `404 Not Found`.
 
 ### Delete a note
 
